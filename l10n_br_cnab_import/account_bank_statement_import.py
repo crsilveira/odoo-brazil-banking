@@ -21,6 +21,7 @@
 import logging
 import StringIO
 from openerp import api, models, fields
+from openerp.tools.translate import _
 from .file_cnab240_parser import Cnab240Parser as cnabparser
 
 
@@ -111,3 +112,66 @@ class AccountBankStatementImport(models.TransientModel):
                           exc_info=True)
             return super(AccountBankStatementImport, self)._parse_file(
                 data_file)
+
+    @api.model
+    def _create_bank_statement(self, stmt_vals):
+        """ Create bank statement from imported values, filtering out
+        already imported transactions, and return data used by the
+        reconciliation widget
+        """
+        bs_model = self.env['account.bank.statement']
+        bsl_model = self.env['account.bank.statement.line']
+        acc_line = self.env['account.move.line']
+        # Filter out already imported transactions and create statement
+        ignored_line_ids = []
+        filtered_st_lines = []
+        for line_vals in stmt_vals['transactions']:
+            if 'name' in line_vals:
+                trans_id = line_vals.get('unique_import_id')
+                num_trans = u'%s/%s-%s' %(trans_id[:3], trans_id[3:11], trans_id[11:12])
+                trans_id = acc_line.search(
+                    [('transaction_ref', '=', num_trans)], limit=1)
+                if trans_id:
+                    line_vals['name'] = u'%s' %(trans_id.ref)
+                if not line_vals.get('partner_id'):
+                    line_vals['partner_id'] = trans_id.partner_id.id
+                
+            unique_id = (
+                'unique_import_id' in line_vals and
+                line_vals['unique_import_id']
+            )
+            if not unique_id or not bool(bsl_model.sudo().search(
+                    [('unique_import_id', '=', unique_id)], limit=1)):
+                filtered_st_lines.append(line_vals)
+            else:
+                ignored_line_ids.append(unique_id)
+        statement_id = False
+        if len(filtered_st_lines) > 0:
+            # Remove values that won't be used to create records
+            stmt_vals.pop('transactions', None)
+            for line_vals in filtered_st_lines:
+                line_vals.pop('account_number', None)
+
+            # Create the statement
+            stmt_vals['line_ids'] = [
+                [0, False, line] for line in filtered_st_lines]
+            statement_id = bs_model.create(stmt_vals).id
+        # Prepare import feedback
+        notifications = []
+        num_ignored = len(ignored_line_ids)
+        if num_ignored > 0:
+            notifications += [{
+                'type': 'warning',
+                'message':
+                    _("%d transactions had already been imported and "
+                      "were ignored.") % num_ignored
+                    if num_ignored > 1
+                    else _("1 transaction had already been imported and "
+                           "was ignored."),
+                'details': {
+                    'name': _('Already imported items'),
+                    'model': 'account.bank.statement.line',
+                    'ids': bsl_model.search(
+                        [('unique_import_id', 'in', ignored_line_ids)]).ids}
+            }]
+        return statement_id, notifications
