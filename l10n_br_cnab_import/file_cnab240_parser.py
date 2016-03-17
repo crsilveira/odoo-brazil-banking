@@ -76,34 +76,37 @@ class Cnab240Parser(object):
         transacoes = []
         for lote in arquivo.lotes:
             for evento in lote.eventos:
+                if banco_impt == u'itau_cobranca_240':
+                    if evento.servico_codigo_movimento not in (6,8,9,10,32):
+                       continue 
+                if evento.data_credito == 0:
+                    data_credito = evento.data_ocorrencia
+                else:             
+                    data_credito = evento.data_credito
                 transacoes.append({
                     'name': evento.sacado_nome,
                     'date': datetime.datetime.strptime(
-                        str(evento.vencimento_titulo), '%d%m%Y'),
+                        str(data_credito), '%d%m%Y'),
                     'amount': evento.valor_titulo,
                     'ref': evento.numero_documento,
-                    'label': evento.sacado_inscricao_numero,  # cnpj
                     'transaction_id': evento.numero_documento,
                     # nosso numero, Alfanumérico
-                    'unique_import_id': evento.numero_documento,
-                })
-
-                res.append({
-                    'name': evento.sacado_nome,
-                    'date': datetime.datetime.strptime(
-                        str(evento.vencimento_titulo), '%d%m%Y'),
+                    'unique_import_id': str(evento.cobranca_carteira)+str(evento.nosso_numero).zfill(8)+str(evento.nosso_numero_dv),
                     'amount': evento.valor_titulo,
-                    'ref': evento.numero_documento,
-                    'label': evento.sacado_inscricao_numero,  # cnpj
-                    'transaction_id': evento.numero_documento,
-                    # nosso numero
                     'commission_amount': evento.valor_tarifas,
-
-                    'currency_code': u'BRL',  # Código da moeda
-                    'account_number': evento.cedente_conta,
-                    'transactions': transacoes,
                 })
-                transacoes = []
+            data_grav = str(lote.header.controlecob_data_gravacao)
+            if len(data_grav) == 7:
+                data_grav = '0' + data_grav
+            res.append({
+                'name': str(lote.header.controlecob_data_gravacao) + str(lote.header.controlecob_numero),
+                'date': datetime.datetime.strptime(data_grav, '%d%m%Y'),
+                # nosso numero
+                'currency_code': u'BRL',  # Código da moeda
+                'account_number': evento.cedente_conta,
+                'transactions': transacoes,
+            })
+            transacoes = []
 
         self.result_row_list = res
         return res
