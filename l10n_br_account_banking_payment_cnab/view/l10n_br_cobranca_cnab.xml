@@ -46,7 +46,7 @@
                                 <!--widget="statinfo"/>-->
                     <!--</div>-->
                     <field name="mode" position="attributes">
-                        <attribute name="domain">[('payment_order_type', '=', payment_order_type)]</attribute>
+                        <attribute name="domain">[('payment_order_type', '=', 'payment')]</attribute>
                     </field>
                 </data>
             </field>

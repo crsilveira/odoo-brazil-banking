@@ -23,6 +23,8 @@
 ##############################################################################
 
 from ..cnab_240 import Cnab240
+import re
+import string
 
 
 class Santander240(Cnab240):
@@ -47,6 +49,10 @@ class Santander240(Cnab240):
         """
         vals = super(Santander240, self)._prepare_header()
         del vals['arquivo_hora_de_geracao']
+        vals['cedente_dv_ag_cc'] = int(
+            vals['cedente_dv_ag_cc'])
+        vals['cedente_agencia_dv'] = int(
+            vals['cedente_agencia_dv']),
         return vals
 
     def _prepare_segmento(self, line):
@@ -56,4 +62,41 @@ class Santander240(Cnab240):
         :return:
         """
         vals = super(Santander240, self)._prepare_segmento(line)
+
+        carteira, nosso_numero, digito = self.nosso_numero(
+            line.move_line_id.transaction_ref)
+
+        vals['cedente_dv_ag_cc'] = int(
+            vals['cedente_dv_ag_cc'])
+        vals['cedente_agencia_conta_dv'] = int(
+            vals['cedente_dv_ag_cc'])
+        vals['carteira_numero'] = int(carteira)
+        vals['nosso_numero'] = int(nosso_numero)
+        vals['nosso_numero_dv'] = int(digito)
+        dig_ag = int(vals['cedente_agencia_dv'])
+        vals['cedente_agencia_dv'] = dig_ag
+        vals['conta_cobranca'] = vals['cedente_conta']
+        vals['conta_cobranca_dv'] = int(vals['cedente_conta_dv'])
+        vals['forma_cadastramento'] = 1
+        # tipo documento : 1- Tradicional , 2- Escritural
+        vals['tipo_documento'] = 1 
+        especie = 2
+        if vals['especie_titulo'] == '01':
+            especie = 2
+        elif vals['especie_titulo'] == '02':
+            especie = 12
+        elif vals['especie_titulo'] == '08':
+            especie = 4
+        vals['especie_titulo'] = especie 
+        vals['juros_mora_data'] = 0 
+
         return vals
+
+    # Override cnab_240.nosso_numero. Diferentes números de dígitos entre
+    # CEF e Itau
+    def nosso_numero(self, format):
+        digito = format[-1:]
+        carteira = format[:3]
+        nosso_numero = re.sub(
+            '[%s]' % re.escape(string.punctuation), '', format[3:-1] or '')
+        return carteira, nosso_numero, digito
