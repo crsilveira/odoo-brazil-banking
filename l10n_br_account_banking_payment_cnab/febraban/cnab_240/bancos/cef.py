@@ -38,6 +38,7 @@ class Cef240(Cnab240):
 
         :return:
         '''
+<<<<<<< HEAD
         #import pudb;pu.db
         vals = super(Cef240, self)._prepare_header()
         #vals['cedente_agencia'] = vals['cedente_agencia']
@@ -54,6 +55,13 @@ class Cef240(Cnab240):
         # biblioteca cnab240
         vals['cedente_conta_dv'] = vals['cedente_dv_ag_cc']
         #vals['controleCobranca_remessaRetorno'] = 
+=======
+
+        vals = super(Cef240, self)._prepare_header()
+        vals['cedente_agencia_dv'] = vals['cedente_dv_ag_cc']
+        vals['reservado_cedente_campo23'] = u'REMESSA-PRODUCAO'
+        vals['cedente_conta_dv'] = vals['cedente_dv_ag_cc']
+>>>>>>> 00f7761dd5c31a4288890e40c5cac29dd76a7857
         vals['data_credito_hd_lote'] = self.data_hoje()
         vals['controlecob_data_gravacao'] = self.data_hoje()
 
@@ -71,6 +79,7 @@ class Cef240(Cnab240):
             line.move_line_id.transaction_ref)
 
         vals['cedente_agencia_dv'] = vals['cedente_dv_ag_cc']
+<<<<<<< HEAD
         #vals['cedente_dv_ag_cc'] = unicode(str(
         #    vals['cedente_dv_ag_cc']), "utf-8")
         # Informar o Número do Documento - Seu Número (mesmo das posições
@@ -80,6 +89,9 @@ class Cef240(Cnab240):
         # TODO: campo 27.3P CEF. Código do juros de mora
         vals['juros_cod_mora'] = 3
         #vals['carteira_modalidade'] = int(vals['boleto_modalidade'])
+=======
+        vals['juros_cod_mora'] = 3
+>>>>>>> 00f7761dd5c31a4288890e40c5cac29dd76a7857
         vals['nosso_numero'] = int(nosso_numero)
         vals['nosso_numero_dv'] = int(digito)
         vals['prazo_baixa'] = unicode(str(
