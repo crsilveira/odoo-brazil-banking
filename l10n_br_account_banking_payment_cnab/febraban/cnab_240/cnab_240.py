@@ -29,6 +29,7 @@ import datetime
 import re
 import string
 import unicodedata
+from unicodedata import normalize
 import time
 
 
@@ -39,6 +40,12 @@ class Cnab240(Cnab):
 
     def __init__(self):
         super(Cnab, self).__init__()
+
+    def removerCaracteresEspeciais (self, text) :
+        """
+        Método para remover caracteres especiais do texto
+        """
+        return normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
 
     @staticmethod
     def get_bank(bank):
@@ -92,6 +99,9 @@ class Cnab240(Cnab):
             'servico_operacao': u'R',
             'nome_banco': unicode(self.order.mode.bank_id.bank_name),
             'codigo_transmissao': int(self.order.mode.boleto_cnab_code),
+            'cedente_convenio': int(self.order.mode.boleto_convenio),
+            'cedente_codigo_codCedente': int(self.order.mode.boleto_convenio),
+            'cedente_cod_cedente': int(self.order.mode.boleto_convenio),
         }
 
     def get_file_numeration(self):
@@ -148,7 +158,7 @@ class Cnab240(Cnab):
 
         # Dígito verificador de agencia e conta
         # Era cedente_agencia_conta_dv agora é cedente_dv_ag_cc
-
+        
         return {
             'controle_banco': int(self.order.mode.bank_id.bank_bic),
             'cedente_agencia': int(self.order.mode.bank_id.bra_number),
@@ -168,6 +178,8 @@ class Cnab240(Cnab):
             # TODO: Código adotado para identificar o título de cobrança.
             # 8 é Nota de cŕedito comercial
             'especie_titulo': int(self.order.mode.boleto_especie),
+            'boleto_convenio': int(self.order.mode.boleto_convenio),
+            'boleto_modalidade': int(self.order.mode.boleto_modalidade),
             'aceite_titulo': aceite,
             'data_emissao_titulo': self.format_date(
                 line.ml_date_created),
@@ -181,10 +193,11 @@ class Cnab240(Cnab):
                 self.sacado_inscricao_tipo(line.partner_id)),
             'sacado_inscricao_numero': int(
                 self.rmchar(line.partner_id.cnpj_cpf)),
-            'sacado_nome': line.partner_id.legal_name,
+            'sacado_nome': self.removerCaracteresEspeciais(line.partner_id.legal_name),
             'sacado_endereco': (
-                line.partner_id.street + ' ' + line.partner_id.number),
-            'sacado_bairro': line.partner_id.district,
+                self.removerCaracteresEspeciais(line.partner_id.street)
+                + ' ' + self.removerCaracteresEspeciais(line.partner_id.number)),
+            'sacado_bairro': self.removerCaracteresEspeciais(line.partner_id.district),
             'sacado_cep': int(prefixo),
             'sacado_cep_sufixo': int(sulfixo),
             'sacado_cidade': line.partner_id.l10n_br_city_id.name,
@@ -206,9 +219,10 @@ class Cnab240(Cnab):
         cobrancasimples_valor_titulos = 0
 
         self.order = order
-        self.arquivo = Arquivo(self.bank, **self._prepare_header())
+        header = self._prepare_header()
+        self.arquivo = Arquivo(self.bank, **header)
         for line in order.line_ids:
-            self.arquivo.incluir_cobranca(**self._prepare_segmento(line))
+            self.arquivo.incluir_cobranca(header, **self._prepare_segmento(line))
             self.arquivo.lotes[0].header.servico_servico = 1
             # TODO: tratar soma de tipos de cobranca
             cobrancasimples_valor_titulos += line.amount_currency
