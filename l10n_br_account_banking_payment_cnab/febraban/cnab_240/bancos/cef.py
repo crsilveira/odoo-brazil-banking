@@ -38,22 +38,11 @@ class Cef240(Cnab240):
 
         :return:
         '''
-        #import pudb;pu.db
+
         vals = super(Cef240, self)._prepare_header()
-        #vals['cedente_agencia'] = vals['cedente_agencia']
         vals['cedente_agencia_dv'] = vals['cedente_dv_ag_cc']
-        # TODO: adicionar campo para preencher o codigo do cedente no
-        # cadastro da conta bancária
-        #vals['cedente_nome'] = vals['cedente_nome']
-        #vals['cedente_codigo_codCedente'] = vals['convenio']
-        #vals['cedente_convenio'] = vals['convenio']
-        #vals['nome_do_banco'] = u'CAIXA ECONOMICA FEDERAL'
-        # Não pode pegar comentário da payment_line.
         vals['reservado_cedente_campo23'] = u'REMESSA-PRODUCAO'
-        # reservado_banco_campo22 não é required. Código atualizado na
-        # biblioteca cnab240
         vals['cedente_conta_dv'] = vals['cedente_dv_ag_cc']
-        #vals['controleCobranca_remessaRetorno'] = 
         vals['data_credito_hd_lote'] = self.data_hoje()
         vals['controlecob_data_gravacao'] = self.data_hoje()
 
@@ -71,15 +60,7 @@ class Cef240(Cnab240):
             line.move_line_id.transaction_ref)
 
         vals['cedente_agencia_dv'] = vals['cedente_dv_ag_cc']
-        #vals['cedente_dv_ag_cc'] = unicode(str(
-        #    vals['cedente_dv_ag_cc']), "utf-8")
-        # Informar o Número do Documento - Seu Número (mesmo das posições
-        # 63-73 do Segmento P)
-        #vals['identificacao_titulo'] = unicode(str(
-        #    vals['numero_documento']), "utf-8")
-        # TODO: campo 27.3P CEF. Código do juros de mora
         vals['juros_cod_mora'] = 3
-        #vals['carteira_modalidade'] = int(vals['boleto_modalidade'])
         vals['nosso_numero'] = int(nosso_numero)
         vals['nosso_numero_dv'] = int(digito)
         vals['prazo_baixa'] = unicode(str(
