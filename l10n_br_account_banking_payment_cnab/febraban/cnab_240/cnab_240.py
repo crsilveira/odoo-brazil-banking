@@ -158,7 +158,7 @@ class Cnab240(Cnab):
 
         # Dígito verificador de agencia e conta
         # Era cedente_agencia_conta_dv agora é cedente_dv_ag_cc
-        
+        #import pudb;pu.db
         return {
             'controle_banco': int(self.order.mode.bank_id.bank_bic),
             'cedente_agencia': int(self.order.mode.bank_id.bra_number),
@@ -170,7 +170,7 @@ class Cnab240(Cnab):
             'identificacao_titulo': u'0000000',  # TODO
             'identificacao_titulo_banco': u'0000000',  # TODO
             'identificacao_titulo_empresa': line.move_line_id.move_id.name,
-            'numero_documento': line.name,
+            'numero_documento': str(line.ml_inv_ref.number),
             'vencimento_titulo': self.format_date(
                 line.ml_maturity_date),
             'valor_titulo': Decimal(str(line.amount_currency)).quantize(
